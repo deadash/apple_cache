@@ -1,0 +1,15 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+goblin = "0.6.0"
+anyhow = "1.0"
+region = "3.0.0"
+libc = "0.2"
+hex = "0.4.3"
+log = "0.4"
+rust-embed = { version = "6.4.2", features = ["include-exclude"] }
+serde = { version = "1.0", features = ["derive"] }
+bincode = { git = "https://github.com/bincode-org/bincode.git" }
