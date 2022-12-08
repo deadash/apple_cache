@@ -55,4 +55,33 @@ impl Cache
             Ok((ctx, data))
         }
     }
+
+    pub fn obtain(&self, ctx: usize, session: &[u8]) -> Result<()>
+    {
+        let func: extern "sysv64" fn(usize, *const c_void, i32) -> i32 =
+            unsafe { core::mem::transmute(self.offset(0x100125a50))};
+        let result = func(ctx, session.as_ptr() as _, session.len() as i32);
+
+        if result != 0 {
+            unreachable!()
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn sign(&self, ctx: usize, data: &[u8]) -> Result<Vec<u8>>
+    {
+        let func: extern "sysv64" fn(usize, *const c_void, i32, *mut *const c_void, *mut i32) -> i32 =
+            unsafe { core::mem::transmute(self.offset(0x1000c5860))};
+        let mut ret_data: *const c_void = 0 as _;
+        let mut data_len: i32 = 0;
+        let result = func(ctx, data.as_ptr() as _, data.len() as i32, &mut ret_data, &mut data_len);
+
+        if result != 0 {
+            unreachable!()
+        } else {
+            let data = unsafe { std::slice::from_raw_parts(ret_data as *const u8, data_len as usize).to_owned() };
+            Ok(data)
+        }
+    }
 }

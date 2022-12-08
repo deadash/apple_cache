@@ -3,3 +3,10 @@ members = [
 	"api",
 	"cast_tool",
 ]
+
+default-members = ["api"]
+
+[profile.release]
+panic = "abort"
+opt-level = "z"
+lto = true

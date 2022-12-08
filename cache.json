@@ -1,0 +1,51 @@
+{
+    "push-token": "45Zh0sGUcZnNiNbhc2bX0F4AS1lMLSbLygyRh2XMmYU=",
+    "ranked-peers": true,
+    "details": {
+        "capabilities": {
+            "ur": true,
+            "sc": true,
+            "pc": true,
+            "im": true,
+            "ns": true,
+            "query-parameters": true
+        },
+        "cache-size": 199000000000,
+        "ac-power": false,
+        "is-portable": true,
+        "local-network": [
+            {
+                "speed": 195,
+                "wired": false
+            }
+        ]
+    },
+    "local-ranges-only": true,
+    "local-ranges":[
+        {
+            "first": "192.168.0.0",
+            "last": "192.168.255.255"
+        }
+    ],
+    "cache-software": [
+        {
+            "type": "cache",
+            "name": "Caching Server",
+            "version": "244"
+        },
+        {
+            "build": "21E258",
+            "type": "system",
+            "name": "macOS",
+            "version": "12.3.1"
+        }
+    ],
+    "guid": "B8361E6D-4D72-40F2-9402-2716ED1C9481",
+    "local-addresses": [
+        {
+            "address": "192.168.8.7",
+            "netmask": "255.255.255.0",
+            "port": "52098"
+        }
+    ]
+}

@@ -13,3 +13,6 @@ log = "0.4"
 rust-embed = { version = "6.4.2", features = ["include-exclude"] }
 serde = { version = "1.0", features = ["derive"] }
 bincode = { git = "https://github.com/bincode-org/bincode.git" }
+base64 = "0.13.1"
+reqwest = { version = "0.11", features = ["blocking", "json", "cookies"] }
+serde_json = "1.0"
