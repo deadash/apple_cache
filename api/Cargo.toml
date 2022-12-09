@@ -16,3 +16,9 @@ bincode = { git = "https://github.com/bincode-org/bincode.git" }
 base64 = "0.13.1"
 reqwest = { version = "0.11", features = ["blocking", "json", "cookies"] }
 serde_json = "1.0"
+unicorn-engine = "2.0.1"
+
+[features]
+default = ["emu"]
+emu = []
+osx = []
