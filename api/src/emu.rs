@@ -1,3 +1,6 @@
+use core::slice::memchr::memchr;
+use std::ffi::CString;
+
 use unicorn_engine::{Unicorn, unicorn_const::{Permission, uc_error}, RegisterX86};
 use anyhow::Result;
 
@@ -40,6 +43,36 @@ pub fn emu_readp<'a>(uc: &mut Unicorn<'a, ()>, address: u64)
         return Err(e)
     } else {
         Ok(ret)
+    }
+}
+
+pub fn emu_reads<'a>(uc: &mut Unicorn<'a, ()>, address: u64)
+    -> Result<String, uc_error>
+{
+    let mut v = vec![0u8; 1024];
+    // TODO: use resize to get more.
+    if let Err(e) = uc.mem_read(address, &mut v) {
+        return Err(e)
+    } else {
+        let len = memchr(0, &v).unwrap_or(v.len());
+        let s = unsafe { CString::from_vec_unchecked(v[..len].to_vec()) }.into_string().unwrap();
+        Ok(s)
+    }
+}
+
+pub fn emu_writes<'a>(uc: &mut Unicorn<'a, ()>, address: u64, s: String)
+    -> Result<(), uc_error>
+{
+    emu_writev(uc, address, s.as_bytes())
+}
+
+pub fn emu_writev<'a>(uc: &mut Unicorn<'a, ()>, address: u64, v: &[u8])
+    -> Result<(), uc_error>
+{
+    if let Err(e) = uc.mem_write(address, v) {
+        return Err(e)
+    } else {
+        Ok(())
     }
 }
 

@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 #![feature(exclusive_range_pattern)]
+#![feature(slice_internals)]
 use std::fs;
 use anyhow::{Result, Context};
 

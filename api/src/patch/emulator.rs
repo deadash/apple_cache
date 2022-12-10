@@ -1,6 +1,7 @@
+use libc::printf;
 use unicorn_engine::{Unicorn, unicorn_const::Permission, RegisterX86};
 
-use crate::emu::{emu_map, emu_readp, emu_writep, as_u8_slice, emu_get_param, emu_set_param};
+use crate::emu::{emu_map, emu_readp, emu_writep, as_u8_slice, emu_get_param, emu_set_param, emu_reads};
 
 const SYSCALL_BASE: u64 = 0x200000000u64;
 const SYSCALL_SIZE: u32 = 0x04;
@@ -22,9 +23,114 @@ const MALLOC_SIZE: u32 = 0x3000;
     
 // ];
 
+static mut GLOBAL_M: u64 = 0;
+static mut GLOBAL_V: Vec<(u8, Vec<u8>)> = Vec::new();
+
 pub const fn data_offset(offset: u32) -> u64
 {
     DATA_BASE + offset as u64 * 8
+}
+
+// ptr as str
+fn cf_to_str<'a>(uc: &mut Unicorn<'a, ()>, ptr: u64) -> String
+{
+    let max = unsafe { GLOBAL_V.len() as u64 };
+    if ptr <= max {
+        unsafe {
+            if let Some((_t, v)) = GLOBAL_V.get(ptr as usize - 1) {
+                // default t == 1
+                String::from_utf8(v.to_vec()).unwrap()
+            } else {
+                todo!()
+            }
+        }
+    } else {
+        let ptr = emu_readp(uc, ptr + 0x10).unwrap();
+        let s = emu_reads(uc, ptr).unwrap();
+        s
+    }
+}
+
+// str as ptr
+fn str_to_cf<'a>(uc: &mut Unicorn<'a, ()>, s: &str) -> u64
+{
+    unsafe {
+        GLOBAL_V.push((1, s.as_bytes().to_vec()));
+        GLOBAL_V.len() as u64
+    }
+}
+
+//
+fn cf_to_bytes<'a>(uc: &mut Unicorn<'a, ()>, ptr: u64) -> Vec<u8>
+{
+    unsafe {
+        if let Some((_t, v)) = GLOBAL_V.get(ptr as usize - 1) {
+            // default t == 2
+            v.to_vec()
+        } else {
+            todo!()
+        }
+    }
+}
+
+// data as ptr
+fn vec_to_cf<'a>(uc: &mut Unicorn<'a, ()>, v: Vec<u8>) -> u64
+{
+    unsafe {
+        GLOBAL_V.push((2, v));
+        GLOBAL_V.len() as u64
+    }
+}
+
+// cf
+fn cf_str_id<'a>(uc: &mut Unicorn<'a, ()>, from: u64) { uc.reg_write(RegisterX86::RAX, 1).unwrap(); }
+fn cf_data_id<'a>(uc: &mut Unicorn<'a, ()>, from: u64) { uc.reg_write(RegisterX86::RAX, 2).unwrap(); }
+
+fn cf_id<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
+{
+    let cf = emu_get_param(uc, 0).unwrap();
+    let id = unsafe {
+        GLOBAL_V.get(cf as usize - 1).unwrap().0
+    };
+    uc.reg_write(RegisterX86::RAX, id as u64).unwrap();
+}
+
+fn cf_len<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
+{
+    let cf = emu_get_param(uc, 0).unwrap();
+    let len = unsafe {
+        GLOBAL_V.get(cf as usize - 1).unwrap().1.len()
+    };
+    uc.reg_write(RegisterX86::RAX, len as u64).unwrap();
+}
+
+fn cf_maxlen<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
+{
+    let len = emu_get_param(uc, 0).unwrap();
+    uc.reg_write(RegisterX86::RAX, len as u64).unwrap();
+}
+
+fn cf_getcstr<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
+{
+    let ptr = emu_get_param(uc, 0).unwrap();
+    let s = cf_to_str(uc, ptr);
+    println!("+ get cstr: {}", s);
+    let ptr = emu_get_param(uc, 1).unwrap();
+    uc.mem_write(ptr, s.as_bytes()).unwrap();
+    uc.reg_write(RegisterX86::RAX, 1).unwrap();
+}
+
+fn cf_getbytes<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
+{
+    let ptr = emu_get_param(uc, 0).unwrap();
+    let bytes = cf_to_bytes(uc, ptr);
+    println!("+ get bytes: {}", hex::encode(&bytes));
+    let start = emu_get_param(uc, 1).unwrap() as usize;
+    let len = emu_get_param(uc, 2).unwrap() as usize;
+    let ptr = emu_get_param(uc, 3).unwrap();
+    println!("+ write to {:x}", ptr);
+    uc.mem_write(ptr, &bytes[start..start+len]).unwrap();
+    uc.reg_write(RegisterX86::RAX, 1).unwrap();
 }
 
 fn not_implement<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
@@ -43,13 +149,20 @@ fn emulator_malloc<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     let size: u64 = emu_get_param(uc, 0).unwrap();
     println!("+ malloc: {} from {:x}", size, from);
-    let rax = match from {
-        0x1000df097 => { MALLOC_BASE } // 512
-        0x1000c82b2 => { MALLOC_BASE + 512 } // 832
-        0x100114999 => { MALLOC_BASE + 512 + 832 } // 11
-        _ => todo!()
+    // let rax = match from {
+    //     0x1000df097 => { MALLOC_BASE } // 512
+    //     0x1000c82b2 => { MALLOC_BASE + 512 } // 832
+    //     0x100114999 => { MALLOC_BASE + 512 + 832 } // 11
+    //     _ => todo!()
+    // };
+    let offset = unsafe {
+        let old = GLOBAL_M;
+        let new = GLOBAL_M + size;
+        GLOBAL_M = new;
+        old
     };
-    uc.reg_write(RegisterX86::RAX, rax).unwrap();
+    println!("+ new: {:x}", MALLOC_BASE + offset);
+    uc.reg_write(RegisterX86::RAX, MALLOC_BASE + offset).unwrap();
 }
 
 fn emulator_free<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
@@ -60,14 +173,17 @@ fn emulator_free<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 
 fn emulator_memcpy<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    // TODO: FIXME
+    let dst = emu_get_param(uc, 0).unwrap();
     let src = emu_get_param(uc, 1).unwrap();
+    let len = emu_get_param(uc, 2).unwrap();
+    let v = uc.mem_read_as_vec(src, len as usize).unwrap();
+    uc.mem_write(dst, &v).unwrap();
     uc.reg_write(RegisterX86::RAX, src).unwrap();
 }
 
 fn emulator_memset<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    todo!()
+    println!("FIXME: memset.");
 }
 
 fn emulator_time<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
@@ -109,7 +225,7 @@ fn emulator_sysctlbyname<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 
 fn emulator_release<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    todo!()
+    println!("FIXME: release.");
 }
 
 fn emulator_skip_1<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
@@ -124,12 +240,37 @@ fn emulator_skip_0<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 
 fn emulator_create_with_cstr<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    todo!()
+    let ptr = emu_get_param(uc, 1).unwrap();
+    let s = emu_reads(uc, ptr).unwrap();
+    let ptr = str_to_cf(uc, &s);
+    uc.reg_write(RegisterX86::RAX, ptr).unwrap();
 }
 
 fn emulator_io_reg<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    todo!()
+    let ptr = emu_get_param(uc, 1).unwrap();
+    println!("+ io reg: {:?}", ptr);
+    let s = cf_to_str(uc, ptr);
+    println!("+ {}", s);
+    
+    let ret = match s.as_str()
+    {
+        "board-id" => vec_to_cf(uc, hex::decode("433234362d5755342d434600").unwrap()),
+        "product-name" => vec_to_cf(uc, hex::decode("564d77617265372c3100").unwrap()),
+        "boot-uuid" => vec_to_cf(uc, hex::decode("32453143463230452d414631332d344634432d414446312d34443431464142423836423500").unwrap()),
+        "IOPlatformSerialNumber" => str_to_cf(uc, "VMxd6muhRqce"),
+        "IOPlatformUUID" => str_to_cf(uc, "564D125C-23F9-7095-9EC9-983BCB8F2FD6"),
+        "Gq3489ugfi" => vec_to_cf(uc, hex::decode("1548b8e035649e797e918931cab812aec7").unwrap()),
+        "Fyp98tpgj" => vec_to_cf(uc, hex::decode("17bc9f170d6a2ae075299ae220ea43e2a7").unwrap()),
+        "kbjfrfpoJU" => vec_to_cf(uc, hex::decode("18d9b7a86702cc6a8fab8f73c0ba2c2aed").unwrap()),
+        "IOMACAddress" => vec_to_cf(uc, hex::decode("000c298f2fd6").unwrap()),
+        "4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:ROM" => vec_to_cf(uc, hex::decode("564d125c23f9").unwrap()),
+        "4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:MLB" => vec_to_cf(uc, hex::decode("634a5765795a67377934387631672e2e2e").unwrap()),
+        "oycqAZloTNDm" => vec_to_cf(uc, hex::decode("55d0143a2eab41e70afa29de95b04cdffb").unwrap()),
+        "abKPld1EcMni" => vec_to_cf(uc, hex::decode("e83ddc6931b80d867d0432225d8dc1a347").unwrap()),
+        _ => 0 as _
+    };
+    uc.reg_write(RegisterX86::RAX, ret).unwrap();
 }
 
 fn emulator_cf_<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
@@ -159,7 +300,13 @@ fn emulator_syscall<'a>(uc: &mut Unicorn<'a, ()>)
         10 | 23 | 29 => { emulator_skip_1 }
         11 => { emulator_create_with_cstr }
         12 => { emulator_io_reg }
-        13 .. 20 => { emulator_cf_ }
+        13 => { cf_id }
+        14 => { cf_str_id }
+        15 | 19 => { cf_len }
+        16 => { cf_maxlen }
+        17 => { cf_getcstr }
+        18 => { cf_data_id }
+        20 => { cf_getbytes }
         24 | 28 => { emulator_skip_0 }
         25 => { emulator_skip_0 } // TODO: _IOServiceGetMatchingServices
         _ => { not_implement }
