@@ -1,3 +1,5 @@
+use std::ffi::CString;
+
 use libc::printf;
 use unicorn_engine::{Unicorn, unicorn_const::Permission, RegisterX86};
 use anyhow::Result;
@@ -116,7 +118,8 @@ fn cf_getcstr<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
     let s = cf_to_str(uc, ptr);
     println!("+ get cstr: {}", s);
     let ptr = emu_get_param(uc, 1).unwrap();
-    uc.mem_write(ptr, s.as_bytes()).unwrap();
+    let cs = CString::new(s).unwrap();
+    uc.mem_write(ptr, cs.as_bytes_with_nul()).unwrap();
     uc.reg_write(RegisterX86::RAX, 1).unwrap();
 }
 
@@ -234,7 +237,21 @@ fn emulator_arc4random<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 
 fn emulator_sysctlbyname<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    // TODO: FIXME
+    let ptr = emu_get_param(uc, 0).unwrap();
+    let oldp = emu_get_param(uc, 1).unwrap();
+    let name = emu_reads(uc, ptr).unwrap();
+    
+    match name.as_str()
+    {
+        "kern.osversion" => {
+            let cs = CString::new("20G527").unwrap();
+            uc.mem_write(oldp, cs.as_bytes_with_nul()).unwrap();
+        }
+        "kern.osrevision" => {
+            uc.mem_write(oldp, as_u8_slice(&199506u32)).unwrap();
+        }
+        _ => {}
+    }
     uc.reg_write(RegisterX86::RAX, 0).unwrap();
 }
 
@@ -256,6 +273,14 @@ fn emulator_skip_0<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 fn emulator_create_with_cstr<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     let ptr = emu_get_param(uc, 1).unwrap();
+    let s = emu_reads(uc, ptr).unwrap();
+    let ptr = str_to_cf(uc, &s);
+    uc.reg_write(RegisterX86::RAX, ptr).unwrap();
+}
+
+fn emulator_service_matching<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
+{
+    let ptr = emu_get_param(uc, 0).unwrap();
     let s = emu_reads(uc, ptr).unwrap();
     let ptr = str_to_cf(uc, &s);
     uc.reg_write(RegisterX86::RAX, ptr).unwrap();
@@ -314,6 +339,7 @@ fn emulator_syscall<'a>(uc: &mut Unicorn<'a, ()>)
         9 | 21 => { emulator_release }
         10 | 23 | 29 => { emulator_skip_1 }
         11 => { emulator_create_with_cstr }
+        22 => { emulator_service_matching }
         12 => { emulator_io_reg }
         13 => { cf_id }
         14 => { cf_str_id }
