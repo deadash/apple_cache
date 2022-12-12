@@ -43,13 +43,13 @@ impl <'a>Cache<'a>
         patch::call_0(&mut self.uc, &pcert)
     }
 
-    pub fn obtain(&self, ctx: usize, session: &[u8]) -> Result<()>
+    pub fn obtain(&mut self, ctx: u64, session: &[u8]) -> Result<()>
     {
-        todo!()
+        patch::call_1(&mut self.uc, ctx, session)
     }
 
-    pub fn sign(&self, ctx: usize, data: &[u8]) -> Result<Vec<u8>>
+    pub fn sign(&mut self, ctx: u64, data: &[u8]) -> Result<Vec<u8>>
     {
-        todo!()
+        patch::call_2(&mut self.uc, ctx, data)
     }
 }

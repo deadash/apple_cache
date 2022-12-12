@@ -174,6 +174,9 @@ fn emulator_malloc<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
         old
     };
     println!("+ new: {:x}", MALLOC_BASE + offset);
+    if offset > MALLOC_SIZE as u64 {
+        println!("FIXME: Not enough malloc space {:x}", offset);
+    }
     uc.reg_write(RegisterX86::RAX, MALLOC_BASE + offset).unwrap();
 }
 
@@ -329,7 +332,7 @@ fn emulator_syscall<'a>(uc: &mut Unicorn<'a, ()>)
     func(uc, _return_address);
 }
 
-pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8]) -> Result<(u64, Vec<u8>)>
+fn heap_init<'a>(uc: &mut Unicorn<'a, ()>)
 {
     let mut stack_top = HEAP_STACK_BASE + HEAP_STACK_SIZE as u64;
     stack_top -= 8;
@@ -337,6 +340,11 @@ pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8]) -> Result<(u64, Vec<u8>
     stack_top -= 8;
     emu_writep(uc, stack_top, SYSCALL_BASE).unwrap();
     uc.reg_write(RegisterX86::RSP, stack_top).unwrap();
+}
+
+pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8]) -> Result<(u64, Vec<u8>)>
+{
+    heap_init(uc);
     // param
     if let Err(e) = emu_map(uc, PARAM_BASE, PARAM_SIZE as usize, Permission::READ | Permission::WRITE) {
         println!("+ failed: {:x} {:?}", PARAM_BASE, e);
@@ -361,6 +369,44 @@ pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8]) -> Result<(u64, Vec<u8>
     println!("+ return {:x}, {:x}, {:x}", ctx, ptr, len);
 
     Ok((ctx, uc.mem_read_as_vec(ptr, len as usize).unwrap()))
+}
+
+pub fn call_1<'a>(uc: &mut Unicorn<'a, ()>, ctx: u64, session: &[u8]) -> Result<()>
+{
+    heap_init(uc);
+    // pass
+    uc.mem_write(PARAM_BASE, &vec![0u8; 32]).unwrap();
+    uc.mem_write(PARAM_BASE + 32, session).unwrap();
+    emu_set_param(uc, 0, ctx).unwrap();
+    emu_set_param(uc, 1, PARAM_BASE + 32).unwrap();
+    emu_set_param(uc, 2, session.len() as _).unwrap();
+
+    uc.emu_start(0x100125a50, 0, 0, 0).unwrap();
+    let result = uc.reg_read(RegisterX86::RAX).unwrap();
+    println!("+ result: {:x}", result);
+
+    Ok(())
+}
+
+pub fn call_2<'a>(uc: &mut Unicorn<'a, ()>, ctx: u64, data: &[u8]) -> Result<Vec<u8>>
+{
+    heap_init(uc);
+    // pass
+    uc.mem_write(PARAM_BASE, &vec![0u8; 32]).unwrap();
+    uc.mem_write(PARAM_BASE + 32, data).unwrap();
+    emu_set_param(uc, 0, ctx).unwrap();
+    emu_set_param(uc, 1, PARAM_BASE + 32).unwrap();
+    emu_set_param(uc, 2, data.len() as _).unwrap();
+    emu_set_param(uc, 3, PARAM_BASE).unwrap();
+    emu_set_param(uc, 4, PARAM_BASE + 8).unwrap();
+    uc.emu_start(0x1000c5860, 0, 0, 0).unwrap();
+    let result = uc.reg_read(RegisterX86::RAX).unwrap();
+    println!("+ result: {:x}", result);
+    let params = uc.mem_read_as_vec(PARAM_BASE, 16).unwrap();
+    let ptr = u64::from_le_bytes(params[..8].try_into().unwrap());
+    let len = u64::from_le_bytes(params[8..16].try_into().unwrap());
+
+    Ok(uc.mem_read_as_vec(ptr, len as usize).unwrap())
 }
 
 fn debug_code<'a>(uc: &mut Unicorn<'a, ()>, address: u64, size: u32)
