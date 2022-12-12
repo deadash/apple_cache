@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 use std::fs;
 use anyhow::{Result, Context};
+use vmprotect::licensing::{set_serial_number, get_hwid};
 
 // use crate::osx::register_fn;
 // mod osx;
@@ -11,6 +12,13 @@ mod macho;
 mod cache;
 
 fn main() -> Result<()> {
+    // check vmp
+    let serial = fs::read("serial")?;
+    let license = set_serial_number(serial)?;
+    if !license.is_success() {
+        println!("hwid: {}", get_hwid());
+        return Err(anyhow::anyhow!("License Failed, {:?}", license));
+    }
     let mut template: serde_json::Value = serde_json::from_slice(&fs::read("cache.json")?)?;
     let c = cache::Cache::new()?;
     let (ctx, res) = c.create(None)?;
