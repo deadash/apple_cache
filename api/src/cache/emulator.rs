@@ -36,13 +36,11 @@ impl <'a>Cache<'a>
         self.loader.get_offset(addr)
     }
 
-    pub fn create(&mut self, _cert: Option<&[u8]>) -> Result<(usize, Vec<u8>)>
+    pub fn create(&mut self, _cert: Option<&[u8]>) -> Result<(u64, Vec<u8>)>
     {
         let cert = Asset::get("cert.cer").context("")?;
         let pcert = &cert.data;
-        // test
-        patch::call_0(&mut self.uc, &pcert);
-        todo!()
+        patch::call_0(&mut self.uc, &pcert)
     }
 
     pub fn obtain(&self, ctx: usize, session: &[u8]) -> Result<()>

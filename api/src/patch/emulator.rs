@@ -1,7 +1,7 @@
 use libc::printf;
 use unicorn_engine::{Unicorn, unicorn_const::Permission, RegisterX86};
-
-use crate::emu::{emu_map, emu_readp, emu_writep, as_u8_slice, emu_get_param, emu_set_param, emu_reads};
+use anyhow::Result;
+use crate::emu::{emu_map, emu_readp, emu_writep, as_u8_slice, emu_get_param, emu_set_param, emu_reads, as_u8_slice_mut};
 
 const SYSCALL_BASE: u64 = 0x200000000u64;
 const SYSCALL_SIZE: u32 = 0x04;
@@ -133,6 +133,24 @@ fn cf_getbytes<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
     uc.reg_write(RegisterX86::RAX, 1).unwrap();
 }
 
+static mut GLOBAL_ETH: bool = false;
+
+// io
+fn eth_reset<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
+{
+    unsafe { GLOBAL_ETH = false };
+}
+
+fn eth_next<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
+{
+    if unsafe { GLOBAL_ETH } {
+        uc.reg_write(RegisterX86::RAX, 0).unwrap();
+    } else {
+        unsafe { GLOBAL_ETH = true } ;
+        uc.reg_write(RegisterX86::RAX, 1).unwrap();
+    }
+}
+
 fn not_implement<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     println!("+ not implement. {:x}", from);
@@ -149,12 +167,6 @@ fn emulator_malloc<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     let size: u64 = emu_get_param(uc, 0).unwrap();
     println!("+ malloc: {} from {:x}", size, from);
-    // let rax = match from {
-    //     0x1000df097 => { MALLOC_BASE } // 512
-    //     0x1000c82b2 => { MALLOC_BASE + 512 } // 832
-    //     0x100114999 => { MALLOC_BASE + 512 + 832 } // 11
-    //     _ => todo!()
-    // };
     let offset = unsafe {
         let old = GLOBAL_M;
         let new = GLOBAL_M + size;
@@ -309,13 +321,15 @@ fn emulator_syscall<'a>(uc: &mut Unicorn<'a, ()>)
         20 => { cf_getbytes }
         24 | 28 => { emulator_skip_0 }
         25 => { emulator_skip_0 } // TODO: _IOServiceGetMatchingServices
+        26 => { eth_reset }
+        27 => { eth_next }
         _ => { not_implement }
     };
 
     func(uc, _return_address);
 }
 
-pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8])
+pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8]) -> Result<(u64, Vec<u8>)>
 {
     let mut stack_top = HEAP_STACK_BASE + HEAP_STACK_SIZE as u64;
     stack_top -= 8;
@@ -339,6 +353,14 @@ pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8])
     uc.emu_start(0x1000d2f30, 0, 0, 0).unwrap();
     let result = uc.reg_read(RegisterX86::RAX).unwrap();
     println!("+ result: {:x}", result);
+
+    let params = uc.mem_read_as_vec(PARAM_BASE, 24).unwrap();
+    let ctx = u64::from_le_bytes(params[..8].try_into().unwrap());
+    let ptr = u64::from_le_bytes(params[8..16].try_into().unwrap());
+    let len = u64::from_le_bytes(params[16..24].try_into().unwrap());
+    println!("+ return {:x}, {:x}, {:x}", ctx, ptr, len);
+
+    Ok((ctx, uc.mem_read_as_vec(ptr, len as usize).unwrap()))
 }
 
 fn debug_code<'a>(uc: &mut Unicorn<'a, ()>, address: u64, size: u32)
@@ -456,7 +478,6 @@ pub fn register_fn(_dylib: &str, name: &str) -> u64
         "_IOIteratorNext" => 27,
         "_IORegistryEntryGetParentEntry" => 28,
         "_CFStringGetSystemEncoding" => 29,
-        "___CFConstantStringClassReference" => 30,
         _ => SYSCALL_MAX - 1,
     } as u32;
 
