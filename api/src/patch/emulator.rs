@@ -1,7 +1,6 @@
 use std::ffi::CString;
 
-use libc::printf;
-use unicorn_engine::{Unicorn, unicorn_const::Permission, RegisterX86};
+use unicorn_engine::{Unicorn, unicorn_const::{Permission, MemType, HookType}, RegisterX86};
 use anyhow::Result;
 use crate::emu::{emu_map, emu_readp, emu_writep, as_u8_slice, emu_get_param, emu_set_param, emu_reads, as_u8_slice_mut};
 
@@ -27,6 +26,7 @@ const MALLOC_SIZE: u32 = 0x3000;
 
 static mut GLOBAL_M: u64 = 0;
 static mut GLOBAL_V: Vec<(u8, Vec<u8>)> = Vec::new();
+static mut DEBUG: bool = false;
 
 pub const fn data_offset(offset: u32) -> u64
 {
@@ -201,7 +201,12 @@ fn emulator_memcpy<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 
 fn emulator_memset<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    println!("FIXME: memset.");
+    let dst = emu_get_param(uc, 0).unwrap();
+    let val = emu_get_param(uc, 1).unwrap();
+    let len = emu_get_param(uc, 2).unwrap();
+    let v = vec![val as u8; len as usize];
+    uc.mem_write(dst, &v).unwrap();
+    uc.reg_write(RegisterX86::RAX, dst).unwrap();
 }
 
 fn emulator_time<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
@@ -437,7 +442,16 @@ pub fn call_2<'a>(uc: &mut Unicorn<'a, ()>, ctx: u64, data: &[u8]) -> Result<Vec
 
 fn debug_code<'a>(uc: &mut Unicorn<'a, ()>, address: u64, size: u32)
 {
-    // println!("+ code: {:x} RDX:{:x}", address, uc.reg_read(RegisterX86::RDX).unwrap());
+    if unsafe { DEBUG } {
+        println!("+ code: {:x} RDX:{:x}", address, uc.reg_read(RegisterX86::RDX).unwrap());
+    }
+}
+
+fn mem_invalid<'a>(uc: &mut Unicorn<'a, ()>, mem_type: MemType, addr: u64, size:  usize, value: i64) -> bool
+{
+    let rip = uc.reg_read(RegisterX86::RIP).unwrap();
+    println!("+ mem invalid: {:x} - {:?}. {:x}", addr, mem_type, rip);
+    false
 }
 
 pub fn regiser_init<'a>(uc: &mut Unicorn<'a, ()>)
@@ -487,10 +501,17 @@ pub fn regiser_init<'a>(uc: &mut Unicorn<'a, ()>)
         println!("+ failed: {:?}", e);
     }
 
+    if let Err(e) = uc.add_mem_hook(HookType::MEM_UNMAPPED, 1, 0, mem_invalid) {
+        println!("+ failed: {:?}", e);
+    }
+
     // TODO: malloc
     if let Err(e) = emu_map(uc, MALLOC_BASE, MALLOC_SIZE as usize, Permission::READ | Permission::WRITE) {
         println!("+ failed: {:x} {:?}", MALLOC_BASE, e);
     }
+
+    // change random
+    unsafe { libc::srand(0x12345678u32) };
 
     println!("+ register init done.");
 }
