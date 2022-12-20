@@ -19,6 +19,7 @@ serde_json = "1.0"
 unicorn-engine = "2.0.1"
 
 [features]
+# default = []
 default = ["emu"]
 emu = []
 osx = []

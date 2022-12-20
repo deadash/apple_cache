@@ -17,7 +17,7 @@ const PARAM_BASE: u64 = DATA_BASE + DATA_SIZE as u64;
 const PARAM_SIZE: u32 = 0x3000;
 
 const MALLOC_BASE: u64 = PARAM_BASE + PARAM_SIZE as u64;
-const MALLOC_SIZE: u32 = 0x3000;
+const MALLOC_SIZE: u32 = 0x20000;
 
 // static SYSCALL_TAB: Vec<usize> = vec![
 //     emulator_exit as usize,
@@ -177,8 +177,8 @@ fn emulator_malloc<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
         old
     };
     println!("+ new: {:x}", MALLOC_BASE + offset);
-    if offset > MALLOC_SIZE as u64 {
-        println!("FIXME: Not enough malloc space {:x}", offset);
+    if (offset + size) > MALLOC_SIZE as u64 {
+        println!("FIXME: Not enough malloc space {:x}. {:x}", offset, offset + size);
     }
     uc.reg_write(RegisterX86::RAX, MALLOC_BASE + offset).unwrap();
 }
@@ -509,9 +509,6 @@ pub fn regiser_init<'a>(uc: &mut Unicorn<'a, ()>)
     if let Err(e) = emu_map(uc, MALLOC_BASE, MALLOC_SIZE as usize, Permission::READ | Permission::WRITE) {
         println!("+ failed: {:x} {:?}", MALLOC_BASE, e);
     }
-
-    // change random
-    unsafe { libc::srand(0x12345678u32) };
 
     println!("+ register init done.");
 }
