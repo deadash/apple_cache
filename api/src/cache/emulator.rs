@@ -21,11 +21,10 @@ impl <'a>Cache<'a>
     pub fn new() -> Result<Cache<'a>>
     {
         // read from memory.
-        // let file = Asset::get("AssetCache~.x64").context("")?;
-        // let data = file.data;
-        let file = fs::read("blob/AssetCache~.x64")?;
-        let mut uc = Unicorn::new(Arch::X86, Mode::LITTLE_ENDIAN | Mode::MODE_64).unwrap();
-        let loader = MachoLoader::new(&file, &mut uc, patch::register_fn)?;
+        let file = Asset::get("AssetCache~.x64").context("")?;
+        let data = file.data;
+        let uc = Unicorn::new(Arch::X86, Mode::LITTLE_ENDIAN | Mode::MODE_64)?;
+        let loader = MachoLoader::new(&data, &mut uc, patch::register_fn)?;
         // install function hook
         patch::regiser_init(&mut uc);
         Ok(Cache { loader, uc })
