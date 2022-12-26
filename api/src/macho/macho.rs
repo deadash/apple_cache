@@ -33,11 +33,7 @@ impl MachoLoader
     }
     pub fn get_offset(&self, addr: usize) -> usize
     {
-        if let Some(page) = &self.page {
-            page.as_ptr() as *const c_void as usize - self.image_base + addr
-        } else {
-            0
-        }
+        self.base_addr - self.image_base + addr
     }
 
     fn init(&mut self, macho: &mach::MachO, file: &[u8], callback: SymbolCallback) -> Result<()>

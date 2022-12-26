@@ -43,6 +43,7 @@ dependencies = [
  "serde",
  "serde_json",
  "vmprotect",
+ "unicorn-engine",
 ]
 
 [[package]]
@@ -135,7 +136,6 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "chrono"
 version = "0.4.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16b0a3d9ed01224b22057780a37bb8c5dbfe1be8ba48678e7bf57ec4b385411f"
 dependencies = [
  "iana-time-zone",
  "js-sys",
@@ -1439,6 +1439,19 @@ name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
+
+[[package]]
+name = "unicorn-engine"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3b881bfd9837ff4f62e81a1e64b40a584604375ae0a73d0d5f09b7a72350b96"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cmake",
+ "libc",
+ "pkg-config",
+]
 
 [[package]]
 name = "url"

@@ -1,4 +1,6 @@
 #![allow(non_snake_case)]
+#![feature(exclusive_range_pattern)]
+#![feature(slice_internals)]
 use std::fs;
 use anyhow::{Result, Context};
 use vmprotect::licensing::{set_serial_number, get_hwid};
@@ -11,7 +13,13 @@ mod patch;
 mod macho;
 mod cache;
 
+#[cfg(feature = "emu")]
+mod emu;
+
+mod mac_serial;
 fn main() -> Result<()> {
+    // init serial
+    mac_serial::MacSerial::instance().init();
     // check vmp
     let serial = fs::read("serial")?;
     let license = set_serial_number(serial)?;
@@ -65,7 +73,7 @@ fn main() -> Result<()> {
     let text = resp.text()?;
     println!("+ Register: {}", text);
 
-    // 获取心跳延迟
+    // // 获取心跳延迟
     
 
     Ok(())
