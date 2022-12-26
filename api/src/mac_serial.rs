@@ -45,7 +45,7 @@ impl MacSerial
     pub fn init(&mut self)
     {
         // sysctl -n kern.osversion
-        self.osversion = "20G527\0".to_owned();
+        self.osversion = "19F96\0".to_owned();
         // sysctl -n kern.osrevision
         self.osrevision = 199506;
         self.board_id = "3434304258204465736B746F70205265666572656E636520506C6174666F726D00\0".to_owned();
@@ -58,7 +58,7 @@ impl MacSerial
         self.fy_serial = "BB85DA6FFAFC55FB18CBCF44A8FFE124F7\0".to_owned();
         self.kb_serial = "365F8ECD4B60A2C2AAC8D7F68407F832C4\0".to_owned();
         // ifconfig en0 | awk '/ether/{ gsub(":",""); print $2 }'
-        self.mac_address = "000c298f2fd6\0".to_owned();
+        self.mac_address = "000c294123ba\0".to_owned();
         self.oy_serial = "C691B3B001E13719C628572CB5C4DFFAFB\0".to_owned();
         self.ab_serial = "5B502BFA6BA9483189A297C29445030FCC\0".to_owned();
         self.rom = "564D4DEB260D\0".to_owned();
