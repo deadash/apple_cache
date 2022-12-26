@@ -15,7 +15,12 @@ mod cache;
 #[cfg(feature = "emu")]
 mod emu;
 
+mod mac_serial;
+
 fn main() -> Result<()> {
+    // init serial
+    mac_serial::MacSerial::instance().init();
+
     let mut template: serde_json::Value = serde_json::from_slice(&fs::read("cache.json")?)?;
     let mut c = cache::Cache::new()?;
     let (ctx, res) = c.create(None)?;

@@ -1,5 +1,5 @@
 use std::ffi::{c_void, c_int, c_char, CStr, c_uint};
-
+use crate::mac_serial::{MacSerial, self};
 use libc::size_t;
 
 unsafe extern "sysv64"
@@ -226,10 +226,10 @@ fn sysctlbyname(name: *const c_char, oldp: *mut c_void, _oldlenp: *mut size_t, _
     match s
     {
         "kern.osversion" => {
-            libc::strcpy(oldp as *mut i8, "20G527\0".as_ptr() as _);
+            libc::strcpy(oldp as *mut i8, MacSerial::instance().osversion.as_ptr() as _);
         }
         "kern.osrevision" => {
-            *(oldp as *mut u32) = 199506;
+            *(oldp as *mut u32) = MacSerial::instance().osrevision;
         }
         _ => {}
     }
@@ -310,19 +310,19 @@ fn io_reg(name: *const c_char) -> *const patch_data
     log::info!("+ io reg, {}", name);
     let ret = match name
     {
-        "board-id" => patch_data::new_data("433234362d5755342d434600\0".as_ptr() as _),
-        "product-name" => patch_data::new_data("564d77617265372c3100\0".as_ptr() as _),
-        "boot-uuid" => patch_data::new_data("32453143463230452d414631332d344634432d414446312d34443431464142423836423500\0".as_ptr() as _),
-        "IOPlatformSerialNumber" => patch_data::new_str("VMxd6muhRqce\0".as_ptr() as _),
-        "IOPlatformUUID" => patch_data::new_str("564D125C-23F9-7095-9EC9-983BCB8F2FD6\0".as_ptr() as _),
-        "Gq3489ugfi" => patch_data::new_data("1548b8e035649e797e918931cab812aec7\0".as_ptr() as _),
-        "Fyp98tpgj" => patch_data::new_data("17bc9f170d6a2ae075299ae220ea43e2a7\0".as_ptr() as _),
-        "kbjfrfpoJU" => patch_data::new_data("18d9b7a86702cc6a8fab8f73c0ba2c2aed\0".as_ptr() as _),
-        "IOMACAddress" => patch_data::new_data("000c298f2fd6\0".as_ptr() as _),
-        "4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:ROM" => patch_data::new_data("564d125c23f9\0".as_ptr() as _),
-        "4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:MLB" => patch_data::new_data("634a5765795a67377934387631672e2e2e\0".as_ptr() as _),
-        "oycqAZloTNDm" => patch_data::new_data("55d0143a2eab41e70afa29de95b04cdffb\0".as_ptr() as _),
-        "abKPld1EcMni" => patch_data::new_data("e83ddc6931b80d867d0432225d8dc1a347\0".as_ptr() as _),
+        "board-id" => patch_data::new_data(MacSerial::instance().board_id.as_ptr() as _),
+        "product-name" => patch_data::new_data(MacSerial::instance().product_name.as_ptr() as _),
+        "boot-uuid" => patch_data::new_data(MacSerial::instance().boot_uuid.as_ptr() as _),
+        "IOPlatformSerialNumber" => patch_data::new_str(MacSerial::instance().serial_number.as_ptr() as _),
+        "IOPlatformUUID" => patch_data::new_str(MacSerial::instance().uuid.as_ptr() as _),
+        "Gq3489ugfi" => patch_data::new_data(MacSerial::instance().gq_serial.as_ptr() as _),
+        "Fyp98tpgj" => patch_data::new_data(MacSerial::instance().fy_serial.as_ptr() as _),
+        "kbjfrfpoJU" => patch_data::new_data(MacSerial::instance().kb_serial.as_ptr() as _),
+        "IOMACAddress" => patch_data::new_data(MacSerial::instance().mac_address.as_ptr() as _),
+        "4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:ROM" => patch_data::new_data(MacSerial::instance().rom.as_ptr() as _),
+        "4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:MLB" => patch_data::new_data(MacSerial::instance().mlb.as_ptr() as _),
+        "oycqAZloTNDm" => patch_data::new_data(MacSerial::instance().oy_serial.as_ptr() as _),
+        "abKPld1EcMni" => patch_data::new_data(MacSerial::instance().ab_serial.as_ptr() as _),
         _ => 0 as _
     };
     ret
