@@ -17,10 +17,10 @@ base64 = "0.13.1"
 reqwest = { version = "0.11", default-feature = false, features = ["blocking", "json", "cookies", "rustls"] }
 serde_json = "1.0"
 vmprotect = { git = "https://github.com/CertainLach/vmprotect.git" }
-unicorn-engine = "2.0.1"
+unicorn-engine = { version = "2.0.1", optional = true }
 
 [features]
 # default = []
 default = ["emu"]
-emu = []
+emu = ["unicorn-engine"]
 osx = []
