@@ -27,6 +27,7 @@ fn main() -> Result<()> {
     let client = reqwest::blocking::Client::builder()
         .default_headers(headers)
         .cookie_store(true)
+        .danger_accept_invalid_certs(true)
         .build()?;
     let resp = client.post("https://lcdn-registration.apple.com/lcdn/session")
         .body(data)

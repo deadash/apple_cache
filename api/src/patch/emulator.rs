@@ -486,20 +486,20 @@ pub fn regiser_init<'a>(uc: &mut Unicorn<'a, ()>)
         println!("+ failed: {:x} {:?}", DATA_BASE, e);
     }
 
-    // TODO: 大小端问题
+    // 固定数据写入
     let mut data: Vec<u64> = Vec::new();
-    data.push(STACK_CHK_GUARD);
-    data.push(data_offset(0));
+    data.push(STACK_CHK_GUARD.to_le());
+    data.push(data_offset(0).to_le());
     for i in 0 .. 10 {
-        data.push(data_offset(i + 2));
+        data.push(data_offset(i + 2).to_le());
     }
     if let Err(e) = uc.mem_write(DATA_BASE, as_u8_slice(&data)) {
         println!("+ failed: {:?}", e);
     }
 
-    if let Err(e) = uc.add_code_hook(1, 0, debug_code) {
-        println!("+ failed: {:?}", e);
-    }
+    // if let Err(e) = uc.add_code_hook(1, 0, debug_code) {
+    //     println!("+ failed: {:?}", e);
+    // }
 
     if let Err(e) = uc.add_mem_hook(HookType::MEM_UNMAPPED, 1, 0, mem_invalid) {
         println!("+ failed: {:?}", e);

@@ -1,0 +1,6 @@
+[target.mips64-unknown-linux-gnuabi64]
+rustflags = [
+    "-C", "target-feature=+crt-static",
+    "-C", "link-arg=-msoft-float",
+]
+linker = "mips64-octeon-linux-gnu-gcc"

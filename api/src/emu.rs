@@ -28,6 +28,7 @@ pub fn emu_map<'a>(uc: &mut Unicorn<'a, ()>,
 pub fn emu_writep<'a>(uc: &mut Unicorn<'a, ()>, address: u64, ptr: u64)
     -> Result<(), uc_error>
 {
+    let ptr = ptr.to_le();
     if let Err(e) = uc.mem_write(address, as_u8_slice(&ptr)) {
         return Err(e)
     } else {
@@ -42,7 +43,7 @@ pub fn emu_readp<'a>(uc: &mut Unicorn<'a, ()>, address: u64)
     if let Err(e) = uc.mem_read(address, as_u8_slice_mut(&mut ret)) {
         return Err(e)
     } else {
-        Ok(ret)
+        Ok(u64::from_le(ret))
     }
 }
 
