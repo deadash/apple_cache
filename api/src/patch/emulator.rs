@@ -116,7 +116,7 @@ fn cf_getcstr<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     let ptr = emu_get_param(uc, 0).unwrap();
     let s = cf_to_str(uc, ptr);
-    println!("+ get cstr: {}", s);
+    log::info!("+ get cstr: {}", s);
     let ptr = emu_get_param(uc, 1).unwrap();
     let cs = CString::new(s).unwrap();
     uc.mem_write(ptr, cs.as_bytes_with_nul()).unwrap();
@@ -127,11 +127,11 @@ fn cf_getbytes<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     let ptr = emu_get_param(uc, 0).unwrap();
     let bytes = cf_to_bytes(uc, ptr);
-    println!("+ get bytes: {}", hex::encode(&bytes));
+    log::info!("+ get bytes: {}", hex::encode(&bytes));
     let start = emu_get_param(uc, 1).unwrap() as usize;
     let len = emu_get_param(uc, 2).unwrap() as usize;
     let ptr = emu_get_param(uc, 3).unwrap();
-    println!("+ write to {:x}", ptr);
+    log::info!("+ write to {:x}", ptr);
     uc.mem_write(ptr, &bytes[start..start+len]).unwrap();
     uc.reg_write(RegisterX86::RAX, 1).unwrap();
 }
@@ -156,29 +156,29 @@ fn eth_next<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 
 fn not_implement<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    println!("+ not implement. {:x}", from);
+    log::warn!("+ not implement. {:x}", from);
     uc.reg_write(RegisterX86::RAX, 0).unwrap();
 }
 
 fn emulator_exit<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    println!("+ token: {:x}", from);
+    log::info!("+ token: {:x}", from);
     uc.emu_stop().unwrap();
 }
 
 fn emulator_malloc<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     let size: u64 = emu_get_param(uc, 0).unwrap();
-    println!("+ malloc: {} from {:x}", size, from);
+    log::info!("+ malloc: {} from {:x}", size, from);
     let offset = unsafe {
         let old = GLOBAL_M;
         let new = GLOBAL_M + size;
         GLOBAL_M = new;
         old
     };
-    println!("+ new: {:x}", MALLOC_BASE + offset);
+    log::info!("+ new: {:x}", MALLOC_BASE + offset);
     if (offset + size) > MALLOC_SIZE as u64 {
-        println!("FIXME: Not enough malloc space {:x}. {:x}", offset, offset + size);
+        log::error!("FIXME: Not enough malloc space {:x}. {:x}", offset, offset + size);
     }
     uc.reg_write(RegisterX86::RAX, MALLOC_BASE + offset).unwrap();
 }
@@ -186,7 +186,7 @@ fn emulator_malloc<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 fn emulator_free<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     let ptr: u64 = emu_get_param(uc, 0).unwrap();
-    println!("+ free: {:x}", ptr);
+    log::info!("+ free: {:x}", ptr);
 }
 
 fn emulator_memcpy<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
@@ -262,7 +262,7 @@ fn emulator_sysctlbyname<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 
 fn emulator_release<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    println!("FIXME: release.");
+    log::info!("FIXME: release.");
 }
 
 fn emulator_skip_1<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
@@ -294,9 +294,8 @@ fn emulator_service_matching<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 fn emulator_io_reg<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
     let ptr = emu_get_param(uc, 1).unwrap();
-    println!("+ io reg: {:?}", ptr);
+    log::info!("+ io reg: {:?}", ptr);
     let s = cf_to_str(uc, ptr);
-    println!("+ {}", s);
     
     let ret = match s.as_str()
     {
@@ -320,7 +319,7 @@ fn emulator_io_reg<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 
 fn emulator_cf_<'a>(uc: &mut Unicorn<'a, ()>, from: u64)
 {
-    println!("+ cf not implement. {:x}", from);
+    log::warn!("+ cf not implement. {:x}", from);
     uc.emu_stop().unwrap();
 }
 
@@ -378,7 +377,7 @@ pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8]) -> Result<(u64, Vec<u8>
     heap_init(uc);
     // param
     if let Err(e) = emu_map(uc, PARAM_BASE, PARAM_SIZE as usize, Permission::READ | Permission::WRITE) {
-        println!("+ failed: {:x} {:?}", PARAM_BASE, e);
+        log::error!("+ failed: {:x} {:?}", PARAM_BASE, e);
     }
     // pass
     uc.mem_write(PARAM_BASE, &vec![0u8; 32]).unwrap();
@@ -391,13 +390,13 @@ pub fn call_0<'a>(uc: &mut Unicorn<'a, ()>, cert: &[u8]) -> Result<(u64, Vec<u8>
 
     uc.emu_start(0x1000d2f30, 0, 0, 0).unwrap();
     let result = uc.reg_read(RegisterX86::RAX).unwrap();
-    println!("+ result: {:x}", result);
+    log::info!("+ result: {:x}", result);
 
     let params = uc.mem_read_as_vec(PARAM_BASE, 24).unwrap();
     let ctx = u64::from_le_bytes(params[..8].try_into().unwrap());
     let ptr = u64::from_le_bytes(params[8..16].try_into().unwrap());
     let len = u64::from_le_bytes(params[16..24].try_into().unwrap());
-    println!("+ return {:x}, {:x}, {:x}", ctx, ptr, len);
+    log::info!("+ return {:x}, {:x}, {:x}", ctx, ptr, len);
 
     Ok((ctx, uc.mem_read_as_vec(ptr, len as usize).unwrap()))
 }
@@ -414,7 +413,7 @@ pub fn call_1<'a>(uc: &mut Unicorn<'a, ()>, ctx: u64, session: &[u8]) -> Result<
 
     uc.emu_start(0x100125a50, 0, 0, 0).unwrap();
     let result = uc.reg_read(RegisterX86::RAX).unwrap();
-    println!("+ result: {:x}", result);
+    log::info!("+ result: {:x}", result);
 
     Ok(())
 }
@@ -432,7 +431,7 @@ pub fn call_2<'a>(uc: &mut Unicorn<'a, ()>, ctx: u64, data: &[u8]) -> Result<Vec
     emu_set_param(uc, 4, PARAM_BASE + 8).unwrap();
     uc.emu_start(0x1000c5860, 0, 0, 0).unwrap();
     let result = uc.reg_read(RegisterX86::RAX).unwrap();
-    println!("+ result: {:x}", result);
+    log::info!("+ result: {:x}", result);
     let params = uc.mem_read_as_vec(PARAM_BASE, 16).unwrap();
     let ptr = u64::from_le_bytes(params[..8].try_into().unwrap());
     let len = u64::from_le_bytes(params[8..16].try_into().unwrap());
@@ -443,28 +442,28 @@ pub fn call_2<'a>(uc: &mut Unicorn<'a, ()>, ctx: u64, data: &[u8]) -> Result<Vec
 fn debug_code<'a>(uc: &mut Unicorn<'a, ()>, address: u64, size: u32)
 {
     if unsafe { DEBUG } {
-        println!("+ code: {:x} RDX:{:x}", address, uc.reg_read(RegisterX86::RDX).unwrap());
+        log::info!("+ code: {:x} RDX:{:x}", address, uc.reg_read(RegisterX86::RDX).unwrap());
     }
 }
 
 fn mem_invalid<'a>(uc: &mut Unicorn<'a, ()>, mem_type: MemType, addr: u64, size:  usize, value: i64) -> bool
 {
     let rip = uc.reg_read(RegisterX86::RIP).unwrap();
-    println!("+ mem invalid: {:x} - {:?}. {:x}", addr, mem_type, rip);
+    log::error!("+ mem invalid: {:x} - {:?}. {:x}", addr, mem_type, rip);
     false
 }
 
 pub fn regiser_init<'a>(uc: &mut Unicorn<'a, ()>)
 {
-    println!("+ start register init.");
+    log::info!("+ start register init.");
     let size = (SYSCALL_SIZE * SYSCALL_MAX) as usize;
     if let Err(e) = emu_map(uc, SYSCALL_BASE, size, Permission::ALL) {
-        println!("+ failed: {:x} {:?}", SYSCALL_BASE, e);
+        log::error!("+ failed: {:x} {:?}", SYSCALL_BASE, e);
     }
 
     // register heap
     if let Err(e) = emu_map(uc, HEAP_STACK_BASE, HEAP_STACK_SIZE as usize, Permission::READ | Permission::WRITE) {
-        println!("+ failed: {:x} {:?}", HEAP_STACK_BASE, e);
+        log::error!("+ failed: {:x} {:?}", HEAP_STACK_BASE, e);
     }
 
     let code:Vec<u8> = vec![0x90, 0x0f, 0x05, 0xc3];
@@ -473,17 +472,17 @@ pub fn regiser_init<'a>(uc: &mut Unicorn<'a, ()>)
         codes.extend(code.iter());
     }
     if let Err(e) = uc.mem_write(SYSCALL_BASE, &codes) {
-        println!("+ failed: {:?}", e);
+        log::error!("+ failed: {:?}", e);
     }
 
     // register callback
     if let Err(e) = uc.add_insn_sys_hook(unicorn_engine::InsnSysX86::SYSCALL, SYSCALL_BASE, SYSCALL_BASE + size as u64, emulator_syscall) {
-        println!("+ failed: {:?}", e);
+        log::error!("+ failed: {:?}", e);
     }
 
     // init .data
     if let Err(e) = emu_map(uc, DATA_BASE, DATA_SIZE as usize, Permission::READ | Permission::WRITE) {
-        println!("+ failed: {:x} {:?}", DATA_BASE, e);
+        log::error!("+ failed: {:x} {:?}", DATA_BASE, e);
     }
 
     // 固定数据写入
@@ -494,7 +493,7 @@ pub fn regiser_init<'a>(uc: &mut Unicorn<'a, ()>)
         data.push(data_offset(i + 2).to_le());
     }
     if let Err(e) = uc.mem_write(DATA_BASE, as_u8_slice(&data)) {
-        println!("+ failed: {:?}", e);
+        log::error!("+ failed: {:?}", e);
     }
 
     // if let Err(e) = uc.add_code_hook(1, 0, debug_code) {
@@ -502,15 +501,15 @@ pub fn regiser_init<'a>(uc: &mut Unicorn<'a, ()>)
     // }
 
     if let Err(e) = uc.add_mem_hook(HookType::MEM_UNMAPPED, 1, 0, mem_invalid) {
-        println!("+ failed: {:?}", e);
+        log::error!("+ failed: {:?}", e);
     }
 
     // TODO: malloc
     if let Err(e) = emu_map(uc, MALLOC_BASE, MALLOC_SIZE as usize, Permission::READ | Permission::WRITE) {
-        println!("+ failed: {:x} {:?}", MALLOC_BASE, e);
+        log::error!("+ failed: {:x} {:?}", MALLOC_BASE, e);
     }
 
-    println!("+ register init done.");
+    log::info!("+ register init done.");
 }
 
 pub fn register_fn(_dylib: &str, name: &str) -> u64

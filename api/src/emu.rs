@@ -21,7 +21,6 @@ pub fn emu_map<'a>(uc: &mut Unicorn<'a, ()>,
 {
     let start = alignb(address, 0x1000u64);
     let end = align(address + size as u64, 0x1000u64);
-    println!("+ map: {:x} === {:x}", start, end);
     uc.mem_map(start, (end - start) as usize, perms)
 }
 

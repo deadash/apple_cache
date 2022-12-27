@@ -50,20 +50,20 @@ impl MachoLoader
             }
         }
         let image_size = image_end - self.image_base;
-        println!("+ alloc image size {:x}", image_size);
+        log::info!("+ alloc image size {:x}", image_size);
         // 映射内存
         if let Err(e) = emu_map(uc, self.base_addr, image_size as usize, Permission::ALL) {
-            println!("+ failed map: {:x} {:?}", self.base_addr, e);
+            log::error!("+ failed map: {:x} {:?}", self.base_addr, e);
         }
 
         // 写入数据
         for sec in &macho.segments {
             // TODO: padding
             if let Err(e) = uc.mem_write(sec.vmaddr, &file[sec.fileoff as usize .. (sec.fileoff + sec.filesize) as usize]) {
-                println!("+ failed write: {:x} {:?}", sec.vmaddr, e);
+                log::error!("+ failed write: {:x} {:?}", sec.vmaddr, e);
             }
         }
-        println!("+ write done.");
+        log::info!("+ write done.");
     
         // 导入符号
         for imp in macho.imports()? {
@@ -74,10 +74,10 @@ impl MachoLoader
             let new_addr = (callback(imp.dylib, imp.name) as i64 + imp.addend) as u64;
             let addr = self.get_offset(imp.address);
             if let Err(e) = emu_writep(uc, addr, new_addr) {
-                println!("+ failed write: {:x} {:x?}, {:?}", addr, new_addr, e);
+                log::error!("+ failed write: {:x} {:x?}, {:?}", addr, new_addr, e);
             }
         }
-        println!("+ done.");
+        log::info!("+ done.");
         Ok(())
     }
 }

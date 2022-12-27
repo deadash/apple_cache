@@ -18,6 +18,8 @@ mod emu;
 mod mac_serial;
 
 fn main() -> Result<()> {
+    // init log
+    env_logger::init();
     // init serial
     mac_serial::MacSerial::instance().init();
 
