@@ -1,6 +1,9 @@
+use std::{fs, fmt::format};
+use serde::Deserialize;
 
+use anyhow::Result;
 
-#[derive(Default)]
+#[derive(Default, Deserialize, Debug)]
 pub(crate)
 struct MacSerial
 {
@@ -14,10 +17,15 @@ struct MacSerial
     pub mac_address: String,
     pub rom: String,
     pub mlb: String,
+    #[serde(rename = "Gq3489ugfi")]
     pub gq_serial: String,
+    #[serde(rename = "Fyp98tpgj")]
     pub fy_serial: String,
+    #[serde(rename = "kbjfrfpoJU")]
     pub kb_serial: String,
+    #[serde(rename = "oycqAZloTNDm")]
     pub oy_serial: String,
+    #[serde(rename = "abKPld1EcMni")]
     pub ab_serial: String,
 }
 
@@ -42,26 +50,33 @@ impl MacSerial
         }
     }
 
-    pub fn init(&mut self)
+    fn zero(s: String) -> String
     {
-        // sysctl -n kern.osversion
-        self.osversion = "19F96\0".to_owned();
-        // sysctl -n kern.osrevision
-        self.osrevision = 199506;
-        self.board_id = "3434304258204465736B746F70205265666572656E636520506C6174666F726D00\0".to_owned();
-        self.product_name = "564d77617265372e3100\0".to_owned();
-        // ioreg -l -p IODeviceTree | grep [system or boot]-uuid
-        self.boot_uuid = "45453146324344302D364335422D343844332D393741392D39393634413832413430394500\0".to_owned();
-        self.serial_number = "VMTesmDVV4yX\0".to_owned();
-        self.uuid = "564D4DEB-260D-5578-C978-B87AA54123BA\0".to_owned();
-        self.gq_serial = "8129849DE39952B4D842E30D9DA8C7E65D\0".to_owned();
-        self.fy_serial = "BB85DA6FFAFC55FB18CBCF44A8FFE124F7\0".to_owned();
-        self.kb_serial = "365F8ECD4B60A2C2AAC8D7F68407F832C4\0".to_owned();
-        // ifconfig en0 | awk '/ether/{ gsub(":",""); print $2 }'
-        self.mac_address = "000c294123ba\0".to_owned();
-        self.oy_serial = "C691B3B001E13719C628572CB5C4DFFAFB\0".to_owned();
-        self.ab_serial = "5B502BFA6BA9483189A297C29445030FCC\0".to_owned();
-        self.rom = "564D4DEB260D\0".to_owned();
-        self.mlb = "56586A4A654C68367055456A75672E2E2E\0".to_owned();
+        format!("{}\x00", s)
+    }
+
+    pub fn init(&mut self) -> Result<()>
+    {
+        let s = fs::read("mac.toml")?;
+        let conf: MacSerial = toml::from_slice(&s)?;
+
+        self.osversion = Self::zero(conf.osversion);
+        self.osrevision = conf.osrevision;
+
+        self.board_id = Self::zero(hex::encode(conf.board_id));
+        self.product_name = Self::zero(hex::encode(conf.product_name));
+        self.boot_uuid = Self::zero(hex::encode(conf.boot_uuid));
+        self.serial_number = Self::zero(conf.serial_number);
+        self.uuid = Self::zero(conf.uuid);
+        self.mac_address = Self::zero(conf.mac_address);
+        self.rom = Self::zero(conf.rom);
+        self.mlb = Self::zero(conf.mlb);
+        self.gq_serial = Self::zero(conf.gq_serial);
+        self.fy_serial = Self::zero(conf.fy_serial);
+        self.kb_serial = Self::zero(conf.kb_serial);
+        self.oy_serial = Self::zero(conf.oy_serial);
+        self.ab_serial = Self::zero(conf.ab_serial);
+
+        Ok(())
     }
 }

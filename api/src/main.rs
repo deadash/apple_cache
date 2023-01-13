@@ -19,7 +19,7 @@ mod emu;
 mod mac_serial;
 fn main() -> Result<()> {
     // init serial
-    mac_serial::MacSerial::instance().init();
+    mac_serial::MacSerial::instance().init()?;
     // check vmp
     let serial = fs::read("serial")?;
     let license = set_serial_number(serial)?;
@@ -28,7 +28,7 @@ fn main() -> Result<()> {
         return Err(anyhow::anyhow!("License Failed, {:?}", license));
     }
     let mut template: serde_json::Value = serde_json::from_slice(&fs::read("cache.json")?)?;
-    let c = cache::Cache::new()?;
+    let mut c = cache::Cache::new()?;
     let (ctx, res) = c.create(None)?;
     let data = base64::encode(res);
     println!("+ res: {:x}, {}", ctx, data);

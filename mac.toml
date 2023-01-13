@@ -1,0 +1,31 @@
+# sysctl -n kern.osversion
+osversion = "22A400"
+# sysctl -n kern.osrevision
+osrevision = 199506
+# From Board ID or ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/board-id/{ print $(NF-1) }'
+board_id = "Mac-7BA5B2D9E42DDD94"
+# From Model
+product_name = "iMacPro1,1"
+
+# ioreg -l -p IODeviceTree | grep [system or boot]-uuid
+boot_uuid = "A2390DCB-4820-4CB5-A275-272C86B1A21B"
+# From Serial Number
+serial_number = "C02TM2ZBHX87"
+# From  Hardware UUID
+uuid = "6247366C-7B66-5EF1-ABBC-F983162867B1"
+
+# serial
+Gq3489ugfi = "6EOFOBA2A3EF8FCCFOF4953AGB3E7B9A35"
+Fyp98tpgj = "C611116F18C639CCCD83E65CD18314BB3"
+kbjfrfpoJU = "97D987C634DC8C9C410353A9FD4CE5BCE7"
+oycqAZloTNDm = "4E40F11555789D30452D17BB6AD1487E33"
+abKPld1EcMni = "DDFB6B8D47E39FBA1DODF559435CB77C18"
+
+# ifconfig en0 | awk '/ether/{ gsub(":",""); print $2 }'
+mac_address = "bcd07437730f"
+
+# From ROM & MLB
+# nvram 4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:ROM | awk '{ print $NF }'
+rom = "FF6666669B8F"
+# nvram 4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:MLB | awk '{ print $NF }'
+mlb = "C02717306J9JG361M"
