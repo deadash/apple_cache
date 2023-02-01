@@ -1,5 +1,5 @@
 use std::ffi::{c_void, c_int, c_char, CStr, c_uint};
-use crate::mac_serial::{MacSerial, self};
+use crate::mac_serial::MacSerial;
 use libc::size_t;
 
 unsafe extern "sysv64"
@@ -257,28 +257,18 @@ IOServiceGetMatchingServices(
     0
 }
 
-static mut gg: u32 = 0;
+static mut GG: u32 = 0;
 unsafe extern "sysv64" fn
-IOIteratorReset(ptr: *mut usize)
+IOIteratorReset(_ptr: *mut usize)
 {
-    // println!("+ call reset: {:x}", ptr as usize);
-    // *(ptr as *mut usize) = 1;
-    gg = 0;
+    GG = 0;
 }
 
 unsafe extern "sysv64" fn
-IOIteratorNext(ptr: *mut usize) -> usize
+IOIteratorNext(_ptr: *mut usize) -> usize
 {
-    println!("+ call next: {:x}", ptr as usize);
-    // if *ptr == 1 {
-    //     1
-    // } else {
-    //     *(ptr as *mut usize) = 2;
-    //     0
-    // }
-    
-    if gg == 0 {
-        gg = gg + 1;
+    if GG == 0 {
+        GG = GG + 1;
         1
     }
     else {

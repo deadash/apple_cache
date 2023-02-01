@@ -1,4 +1,4 @@
-use std::{fs, fmt::format};
+use std::fs;
 use serde::Deserialize;
 
 use anyhow::Result;
@@ -63,19 +63,19 @@ impl MacSerial
         self.osversion = Self::zero(conf.osversion);
         self.osrevision = conf.osrevision;
 
-        self.board_id = Self::zero(hex::encode(conf.board_id));
-        self.product_name = Self::zero(hex::encode(conf.product_name));
-        self.boot_uuid = Self::zero(hex::encode(conf.boot_uuid));
+        self.board_id = Self::zero(hex::encode(Self::zero(conf.board_id)));
+        self.product_name = Self::zero(hex::encode(Self::zero(conf.product_name)));
+        self.boot_uuid = Self::zero(hex::encode(Self::zero(conf.boot_uuid)));
         self.serial_number = Self::zero(conf.serial_number);
         self.uuid = Self::zero(conf.uuid);
         self.mac_address = Self::zero(conf.mac_address);
         self.rom = Self::zero(conf.rom);
-        self.mlb = Self::zero(conf.mlb);
-        self.gq_serial = Self::zero(conf.gq_serial);
-        self.fy_serial = Self::zero(conf.fy_serial);
-        self.kb_serial = Self::zero(conf.kb_serial);
-        self.oy_serial = Self::zero(conf.oy_serial);
-        self.ab_serial = Self::zero(conf.ab_serial);
+        self.mlb = Self::zero(hex::encode(conf.mlb));
+        self.gq_serial = Self::zero(conf.gq_serial.to_lowercase());
+        self.fy_serial = Self::zero(conf.fy_serial.to_lowercase());
+        self.kb_serial = Self::zero(conf.kb_serial.to_lowercase());
+        self.oy_serial = Self::zero(conf.oy_serial.to_lowercase());
+        self.ab_serial = Self::zero(conf.ab_serial.to_lowercase());
 
         Ok(())
     }

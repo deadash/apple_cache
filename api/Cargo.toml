@@ -17,12 +17,12 @@ bincode = { git = "https://github.com/bincode-org/bincode.git" }
 base64 = "0.13.1"
 reqwest = { version = "0.11", features = ["blocking", "json", "cookies"] }
 serde_json = "1.0"
-vmprotect = { git = "https://github.com/CertainLach/vmprotect.git" }
+vmprotect = { git = "https://github.com/CertainLach/vmprotect.git", optional = true }
 unicorn-engine = { version = "2.0.1", optional = true }
 toml = "0.5.10"
 
 [features]
-# default = []
-default = ["emu"]
+default = []
+rel = ["vmprotect"]
 emu = ["unicorn-engine"]
 osx = []
