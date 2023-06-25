@@ -53,6 +53,7 @@ fn main() -> Result<()> {
     println!("+ Got {}", data);
     
     let data = data.trim_matches('"');
+    let data = data.replace("\\u003d", "=");
     let data = base64::decode(data)?;
     println!("+ Obtain: {:?}", c.obtain(ctx, &data));
 
