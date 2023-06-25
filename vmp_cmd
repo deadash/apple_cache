@@ -1,0 +1,1 @@
+RUST_LOG=trace LD_LIBRARY_PATH=vmp target/release/api
