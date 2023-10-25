@@ -1,0 +1,31 @@
+# sysctl -n kern.osversion
+osversion = "22A400"
+# sysctl -n kern.osrevision
+osrevision = 199506
+# From Board ID or ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/board-id/{ print $(NF-1) }'
+board_id = "VMware7,1"
+# From Model
+product_name = "C246-WU4-CF"
+
+# ioreg -l -p IODeviceTree | grep [system or boot]-uuid
+boot_uuid = "309F9AA3-582D-404C-9D5D-98D1872753F4"
+# From Serial Number
+serial_number = "VMWPArEagx4F"
+# From  Hardware UUID
+uuid = "564DDF61-046F-3563-337D-A8DD7EC93B39"
+
+# serial
+Gq3489ugfi = "20E7842CF797F2CEF7D6FBC3A3BD9555F0"
+Fyp98tpgj = "14431143163D8EE5144E952AE793416FA7"
+kbjfrfpoJU = "A028951F5F266FCADD4C5161C11E3F907B"
+oycqAZloTNDm = "89202B04C7EC3E704E490803E8D652412D"
+abKPld1EcMni = "2BDC80C930ECAF71A29612DF217C332385"
+
+# ifconfig en0 | awk '/ether/{ gsub(":",""); print $2 }'
+mac_address = "bcd07437730f"
+
+# From ROM & MLB
+# nvram 4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:ROM | awk '{ print $NF }'
+rom = "564DDF61046F"
+# nvram 4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:MLB | awk '{ print $NF }'
+mlb = "NWMzfajdfsk7OQ..."

@@ -3,6 +3,8 @@
 #![feature(slice_internals)]
 use std::fs;
 use anyhow::{Result, Context};
+#[cfg(feature = "rel")]
+use vmprotect::licensing::{set_serial_number, get_hwid};
 
 // use crate::osx::register_fn;
 // mod osx;
@@ -16,12 +18,21 @@ mod cache;
 mod emu;
 
 mod mac_serial;
-
 fn main() -> Result<()> {
     // init log
     env_logger::init();
     // init serial
-    mac_serial::MacSerial::instance().init();
+    mac_serial::MacSerial::instance().init()?;
+    // check vmp
+    #[cfg(feature = "rel")]
+{
+    let serial = fs::read("serial")?;
+    let license = set_serial_number(serial)?;
+    if !license.is_success() {
+        println!("hwid: {}", get_hwid());
+        return Err(anyhow::anyhow!("License Failed, {:?}", license));
+    }
+}
 
     let mut template: serde_json::Value = serde_json::from_slice(&fs::read("cache.json")?)?;
     let mut c = cache::Cache::new()?;
@@ -50,6 +61,7 @@ fn main() -> Result<()> {
     println!("+ Got {}", data);
     
     let data = data.trim_matches('"');
+    let data = data.replace("\\u003d", "=");
     let data = base64::decode(data)?;
     println!("+ Obtain: {:?}", c.obtain(ctx, &data));
 

@@ -12,16 +12,19 @@ hex = "0.4.3"
 log = "0.4"
 rust-embed = { version = "6.4.2", features = ["include-exclude"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_derive = "1.0"
 bincode = { git = "https://github.com/bincode-org/bincode.git" }
 base64 = "0.13.1"
 reqwest = { version = "0.11", features = ["blocking", "json", "cookies"] }
 serde_json = "1.0"
-unicorn-engine = "2.0.1"
+vmprotect = { git = "https://github.com/CertainLach/vmprotect.git", optional = true }
+unicorn-engine = { version = "2.0.1", optional = true }
 openssl = { version = "0.10", features = ["vendored"] }
 env_logger = "0.10.0"
+toml = "0.5.10"
 
 [features]
-# default = []
-default = ["emu"]
-emu = []
+default = []
+rel = ["vmprotect"]
+emu = ["unicorn-engine"]
 osx = []
