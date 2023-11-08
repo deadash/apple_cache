@@ -1,13 +1,14 @@
 use std::ffi::c_void;
 use anyhow::Result;
 use goblin::mach;
+use region::Allocation;
 
 #[derive(Default)]
 pub struct MachoLoader
 {
     image_base: usize,
     base_addr: usize, 
-    page: Option<region::Allocation>,
+    page: Option<usize>,
 }
 
 pub type SymbolCallback = fn (dylib: &str, name: &str) -> usize;
@@ -56,7 +57,7 @@ impl MachoLoader
         // 映射内存
         let page = region::alloc(image_size, region::Protection::READ_WRITE_EXECUTE)?;
         self.base_addr = page.as_ptr() as *const c_void as usize;
-        self.page = Some(page);
+        self.set_allocation(Box::new(page));
     
         // 写入数据
         for sec in &macho.segments {
@@ -91,5 +92,26 @@ impl MachoLoader
             }
             *ptr += self.base_addr;
         }
+    }
+
+    pub fn set_allocation(&mut self, allocation: Box<Allocation>) {
+        let allocation_ptr = Box::into_raw(allocation) as *mut Allocation as usize;
+        self.page = Some(allocation_ptr);
+    }
+
+    pub fn release_allocation(&mut self) {
+        if let Some(allocation_ptr) = self.page {
+            unsafe {
+                let _allocation = Box::from_raw(allocation_ptr as *mut Allocation);
+            }
+        }
+        self.page = None;
+    }
+}
+
+impl Drop for MachoLoader
+{
+    fn drop(&mut self) {
+        self.release_allocation()
     }
 }

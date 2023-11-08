@@ -60,6 +60,10 @@ impl MacSerial
         let s = fs::read("mac.toml")?;
         let conf: MacSerial = toml::from_slice(&s)?;
 
+        self.copy_from_str(conf)
+    }
+
+    fn copy_from_str(&mut self, conf: MacSerial) -> Result<()> {
         self.osversion = Self::zero(conf.osversion);
         self.osrevision = conf.osrevision;
 
@@ -78,5 +82,10 @@ impl MacSerial
         self.ab_serial = Self::zero(conf.ab_serial.to_lowercase());
 
         Ok(())
+    }
+
+    pub fn init_from_json(&mut self, json: &str) -> Result<()> {
+        let conf: MacSerial = serde_json::from_str(json)?;
+        self.copy_from_str(conf)
     }
 }

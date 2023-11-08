@@ -1,3 +1,5 @@
 /target
 /openssl*
 Cargo.lock
+bindings/python/*
+!bindings/**/*.py

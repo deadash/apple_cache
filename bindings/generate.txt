@@ -1,0 +1,1 @@
+cargo run --features=uniffi/cli --package api --bin uniffi-bindgen generate .\api\src\lib.udl --language python

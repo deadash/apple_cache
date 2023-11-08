@@ -1,0 +1,12 @@
+[bindings.python]
+cdylib_name = "apple_cache"
+
+[bindings.ruby]
+cdylib_name = "apple_cache"
+
+[bindings.swift]
+cdylib_name = "apple_cache"
+
+[bindings.kotlin]
+package_name = "org.apple.cache"
+cdylib_name = "apple_cache"

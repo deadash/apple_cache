@@ -1,0 +1,25 @@
+namespace apple_cache {
+    [Throws=CacheError]
+    void init_serial(string serial);
+};
+
+[Error]
+enum CacheError {
+    "HandleFailed",
+};
+
+dictionary CacheResult {
+    u64 ctx;
+    sequence<u8> data;
+};
+
+interface CacheApi {
+    [Throws=CacheError]
+    constructor();
+    [Throws=CacheError]
+    CacheResult create(sequence<u8>? cert);
+    [Throws=CacheError]
+    void obtain(u64 ctx, sequence<u8> session);
+    [Throws=CacheError]
+    sequence<u8> sign(u64 ctx, sequence<u8> data);
+};

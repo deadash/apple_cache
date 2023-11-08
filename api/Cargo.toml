@@ -22,9 +22,22 @@ unicorn-engine = { version = "2.0.1", optional = true }
 openssl = { version = "0.10", features = ["vendored"] }
 env_logger = "0.10.0"
 toml = "0.5.10"
+uniffi = { version = "0.25.0", features = ["cli"]}
+thiserror = "1.0.50"
 
 [features]
 default = []
 rel = ["vmprotect"]
 emu = ["unicorn-engine"]
 osx = []
+
+[build-dependencies]
+uniffi = { version = "0.25", features = [ "build" ] }
+
+[lib]
+crate-type = ["cdylib"]
+name = "apple_cache"
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/uniffi-bindgen.rs"

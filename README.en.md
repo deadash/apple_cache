@@ -17,7 +17,12 @@ This project reverse-engineers the signature algorithm for Apple's caching serve
 - `cache.json`: Used for setting up IP ranges, similar to macOS options.
 - `mac.toml`: Stores machine code information and can be reused on a new Mac machine. Ensure that all five codes are unified.
 
+#### Third-Party Bindings
+
+- Python bindings are supported; you can directly run `register.py`` to use them.
+- For `Kotlin/Swift`, please generate the bindings accordingly.
+
 #### Future Plans
 
-1. Expose easy-to-use APIs via cxx/uniffi-rs for other programming languages (e.g., C++/Python/Kotlin/Swift).
+1. Expose easy-to-use APIs via cxx for other programming languages (e.g., C++).
 2. Transcompile the code by simulating the traces to llvm-ir, and then lifting it to C code.
